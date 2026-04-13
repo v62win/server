@@ -36,7 +36,7 @@ dependencies:
   permission_handler: ^11.0.1
   printing: ^5.11.1
   pull_to_refresh: ^2.0.0
-  qr_code_scanner_plus: ^2.0.7
+  qr_code_scanner_plus: ^2.0.6
   responsive_framework: ^1.1.1
   share_plus: ^7.2.1
   shared_preferences: ^2.2.2
