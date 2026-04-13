@@ -1,194 +1,56 @@
-const express = require('express');
-const cors = require('cors');
-const bodyParser = require('body-parser');
-const axios = require('axios');
+name: ctms
+description: "A new Flutter project."
+publish_to: 'none'
+version: 0.1.3+5
 
-const app = express();
-const port = process.env.PORT || 3000;
+environment:
+  sdk: ">=3.1.0 <4.0.0"
 
-// Enhanced CORS configuration
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Cache-Control', 'Pragma'],
-  credentials: false
-}));
+dependencies:
+  flutter:
+    sdk: flutter
 
-// Additional CORS headers for mobile/web compatibility
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, Cache-Control, Pragma');
-  res.header('Access-Control-Max-Age', '86400'); // 24 hours
+  animated_custom_dropdown: ^3.0.0
+  cached_network_image: ^3.3.1
+  camera: ^0.10.5+9
+  carousel_slider: ^4.2.1
+  data_table_2: ^2.5.10
+  dio: ^5.4.0
+  dropdown_search: ^5.0.6
+  fl_chart: ^0.65.0
+  flutter_datetime_picker: ^1.5.1
+  flutter_launcher_icons: ^0.13.1
+  flutter_screenutil: ^5.9.0
+  flutter_slidable: ^3.0.1
+  flutter_spinkit: ^5.2.0
+  flutter_svg: ^2.0.9
+  flutter_typeahead: ^5.0.1
+  flutter_vector_icons: ^2.0.0
+  get: ^4.6.6
+  get_storage: ^2.1.1
+  google_fonts: ^6.1.0
+  in_app_update: ^4.2.3
+  intl: ^0.18.1
+  just_audio: ^0.9.36
+  mobile_scanner: ^3.5.7
+  permission_handler: ^11.0.1
+  printing: ^5.11.1
+  pull_to_refresh: ^2.0.0
+  qr_code_scanner_plus: ^2.0.7
+  responsive_framework: ^1.1.1
+  share_plus: ^7.2.1
+  shared_preferences: ^2.2.2
+  shimmer: ^3.0.0
+  toastification: ^1.2.0
+  url_launcher: ^6.2.1
 
-  // Handle preflight requests
-  if (req.method === 'OPTIONS') {
-    res.sendStatus(200);
-    return;
-  }
-  next();
-});
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
 
-app.use(bodyParser.json());
-
-// Initialize with sample data to avoid null errors
-let latestData = { 
-  temperature: 22.5, 
-  humidity: 45.0, 
-  timestamp: new Date().toISOString() 
-};
-
-let sheetUrl = null;
-
-// Health check endpoint
-app.get('/', (req, res) => {
-  res.json({ 
-    status: "Weather API Server Running",
-    timestamp: new Date().toISOString(),
-    endpoints: {
-      "GET /data": "Get latest weather data",
-      "POST /data": "Submit weather data", 
-      "POST /register": "Register Google Sheets URL",
-      "GET /health": "Health check"
-    }
-  });
-});
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: "healthy",
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString(),
-    latestData: latestData
-  });
-});
-
-// Register Google Sheets URL
-app.post('/register', (req, res) => {
-  try {
-    sheetUrl = req.body.sheetUrl;
-    console.log('Sheet URL registered:', sheetUrl);
-    res.json({ 
-      status: "sheetUrl saved",
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    console.error('Error in /register:', error);
-    res.status(500).json({ 
-      error: "Failed to register sheet URL",
-      message: error.message 
-    });
-  }
-});
-
-// Submit weather data
-app.post('/data', async (req, res) => {
-  try {
-    const { temperature, humidity } = req.body;
-
-    // Validate input
-    if (typeof temperature !== 'number' || typeof humidity !== 'number') {
-      return res.status(400).json({ 
-        error: "Invalid data format",
-        message: "Temperature and humidity must be numbers"
-      });
-    }
-
-    latestData = {
-      temperature: parseFloat(temperature.toFixed(1)),
-      humidity: parseFloat(humidity.toFixed(1)),
-      timestamp: new Date().toISOString()
-    };
-
-    console.log('Data received:', latestData);
-
-    // Send to Google Sheets if URL is registered
-    if (sheetUrl) {
-      try {
-        await axios.post(sheetUrl, { 
-          temperature: latestData.temperature, 
-          humidity: latestData.humidity,
-          timestamp: latestData.timestamp
-        }, {
-          timeout: 5000 // 5 second timeout
-        });
-        console.log('Data sent to Google Sheets successfully');
-      } catch (sheetError) {
-        console.error('Error sending to Google Sheets:', sheetError.message);
-        // Don't fail the main request if Google Sheets fails
-      }
-    }
-
-    res.json({ 
-      status: "data received",
-      data: latestData
-    });
-
-  } catch (error) {
-    console.error('Error in /data POST:', error);
-    res.status(500).json({ 
-      error: "Failed to process data",
-      message: error.message 
-    });
-  }
-});
-
-// Get latest weather data
-app.get('/data', (req, res) => {
-  try {
-    // Add cache control headers to prevent caching issues
-    res.set({
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0'
-    });
-
-    console.log('Data requested:', latestData);
-    res.json(latestData);
-  } catch (error) {
-    console.error('Error in /data GET:', error);
-    res.status(500).json({ 
-      error: "Failed to get data",
-      message: error.message 
-    });
-  }
-});
-
-// Keep-alive endpoint for preventing Replit sleep
-app.get('/ping', (req, res) => {
-  res.json({ 
-    status: "pong",
-    timestamp: new Date().toISOString()
-  });
-});
-
-// Error handling middleware
-app.use((error, req, res, next) => {
-  console.error('Unhandled error:', error);
-  res.status(500).json({ 
-    error: "Internal server error",
-    message: error.message 
-  });
-});
-
-// Handle 404
-app.use((req, res) => {
-  res.status(404).json({ 
-    error: "Endpoint not found",
-    availableEndpoints: ["/", "/data", "/register", "/health", "/ping"]
-  });
-});
-
-// Start server
-app.listen(port, '0.0.0.0', () => {
-  console.log(`🌤  Weather API Server running on port ${port}`);
-  console.log(`🔧 Health check: /health`);
-  console.log(`📊 Data endpoint: /data`);
-  console.log(`⏰ Started at: ${new Date().toISOString()}`);
-});
-
-// Keep the process alive and log activity
-setInterval(() => {
-  console.log(`⚡ Server alive at ${new Date().toISOString()} - Latest data:`, latestData);
-}, 30000); // Log every 30 seconds
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/audios/
